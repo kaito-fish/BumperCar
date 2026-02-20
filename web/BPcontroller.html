@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bumper Car Web Controller</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>ESP32 バンパーカー コントローラ</h1>
+  <button id="connectBtn" class="btn btn-connect" onclick="connectBLE()">Bluetooth接続</button>
+  <div id="status">未接続 (テストモード稼働中)</div>
+
+  <div id="actionDisplay">⏹️ 停止中</div>
+
+  <div class="grid">
+    <div class="empty"></div>
+    <button id="btn-w" class="btn" onmousedown="sendCmd('forward')" onmouseup="sendCmd('brake')">W (前)</button>
+    <div class="empty"></div>
+    <button id="btn-a" class="btn" onmousedown="sendCmd('left')" onmouseup="sendCmd('brake')">A (左)</button>
+    <button id="btn-s" class="btn" onmousedown="sendCmd('back')" onmouseup="sendCmd('brake')">S (後)</button>
+    <button id="btn-d" class="btn" onmousedown="sendCmd('right')" onmouseup="sendCmd('brake')">D (右)</button>
+  </div>
+  
+  <p class="instruction">画面上のボタンをクリック、またはキーボードの <strong>W, A, S, D</strong> キーで操作します。<br>※未接続時は画面上のテスト動作のみ行われます。</p>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
