@@ -1,21 +1,23 @@
-/* 全体のスタイル */
-body { 
-    font-family: sans-serif; 
-    text-align: center; 
-    margin-top: 50px; 
-    background-color: #f4f4f9; 
+/* =========================================================
+   Bumper Car Web Controller — Stylesheet
+   ========================================================= */
+
+/* --- 全体 --- */
+body {
+  font-family: sans-serif;
+  text-align: center;
+  margin-top: 50px;
+  background-color: #f4f4f9;
 }
 
-/* 接続ステータスの文字 */
-#status { 
-    margin: 20px; 
-    font-weight: bold; 
-    color: #555; 
+/* --- 接続ステータス --- */
+#status {
+  margin: 20px;
+  font-weight: bold;
+  color: #555;
 }
-body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
-#status { margin: 10px; font-weight: bold; color: #555; }
 
-/* 動作確認用ディスプレイのデザイン */
+/* --- 動作確認ディスプレイ --- */
 #actionDisplay {
   margin: 20px auto;
   font-size: 24px;
@@ -26,42 +28,60 @@ body { font-family: sans-serif; text-align: center; margin-top: 50px; background
   padding: 15px;
   width: 250px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.15s;
 }
 
-.btn { 
-  padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; border: none; 
-  border-radius: 8px; background-color: #007bff; color: white; 
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1); user-select: none; transition: 0.1s;
+/* --- ボタン共通 --- */
+.btn {
+  padding: 15px 30px;
+  font-size: 18px;
+  margin: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: background-color 0.1s, box-shadow 0.1s, transform 0.1s;
 }
 
-/* マウスで押した時 ＆ キーボードで押した時(.active) の両方で沈み込む */
-.btn:active, .btn.active { 
-  background-color: #0056b3; 
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2); 
-  transform: translateY(3px); 
+/* マウス / キーボード / タッチ押下時 */
+.btn:active,
+.btn.active {
+  background-color: #0056b3;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(3px);
 }
 
-.btn-connect { background-color: #28a745; }
-.grid { display: grid; grid-template-columns: 100px 100px 100px; gap: 10px; justify-content: center; margin-top: 20px; }
-.empty { visibility: hidden; }
-.instruction { margin-top: 30px; color: #666; line-height: 1.5; }
-/* 十字キー風のレイアウト（グリッド） */
-.grid { 
-    display: grid; 
-    grid-template-columns: 100px 100px 100px; 
-    gap: 10px; 
-    justify-content: center; 
-    margin-top: 30px; 
+/* --- 接続ボタン --- */
+.btn-connect {
+  background-color: #28a745;
+}
+.btn-connect:active {
+  background-color: #1e7e34;
+}
+
+/* --- 十字キー風グリッド --- */
+.grid {
+  display: grid;
+  grid-template-columns: 100px 100px 100px;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 30px;
 }
 
 /* グリッドの空白部分 */
-.empty { 
-    visibility: hidden; 
+.empty {
+  visibility: hidden;
 }
 
-/* 操作説明のテキスト */
+/* --- 操作説明テキスト --- */
 .instruction {
-    margin-top: 30px; 
-    color: #666;
+  margin-top: 30px;
+  color: #666;
+  line-height: 1.5;
 }

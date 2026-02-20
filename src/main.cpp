@@ -1,112 +1,152 @@
 #include <Arduino.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
+#include <NimBLEDevice.h>
 
-// ESP32のピン定義
-const int RF = 12; // 橙：右前
-const int RR = 14; // 青：右後
-const int LF = 27; // 緑：左前
-const int LR = 26; // 白：左後
+// =========================================================
+//  ESP32 バンパーカー ファームウェア
+//  - NimBLE v2.x による省メモリ BLE 通信
+//  - 切断時の自動ブレーキ & 再アドバタイズ
+//  - 構造体マップ方式のコマンド処理
+// =========================================================
 
-// BLEのUUID（.envから読み込み）
+// --- ピン定義 ---
+const int RF = 12;  // 橙：右前
+const int RR = 14;  // 青：右後
+const int LF = 27;  // 緑：左前
+const int LR = 26;  // 白：左後
+
+// --- BLE UUID (.env から読み込み) ---
 #define SERVICE_UUID           BLE_SERVICE_UUID
 #define CHARACTERISTIC_UUID_RX BLE_CHARACTERISTIC_UUID_RX
 
-// プロトタイプ宣言（下にある関数を先にコンパイラに知らせる）
-void brake();
-void handle_message(String message);
-
-// --- BLE受信コールバック ---
-// （※setup()より上に移動し、String型に修正しました）
-class MyCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) {
-      // ESP32 v3.x では getValue() が std::string を返すため、String に変換
-      String rxValue = String(pCharacteristic->getValue().c_str());
-      
-      if (rxValue.length() > 0) {
-        Serial.println("=============================");
-        Serial.print("Raw BLE Data : [");
-        Serial.print(rxValue);
-        Serial.print("] (Length: ");
-        Serial.print(rxValue.length());
-        Serial.println(")");
-
-        rxValue.trim(); // ゴミ文字（改行や空白）を削除
-
-        Serial.print("Trimmed Data : [");
-        Serial.print(rxValue);
-        Serial.print("] (Length: ");
-        Serial.print(rxValue.length());
-        Serial.println(")");
-
-        // 制御関数に渡す
-        handle_message(rxValue);
-      }
-    }
+// --- モーターコマンドの構造体定義 ---
+struct MotorCommand {
+  const char* name;
+  uint8_t rfState, rrState, lfState, lrState;
 };
 
+// コマンド → ピン状態のマッピングテーブル
+static const MotorCommand COMMANDS[] = {
+  // name       RF    RR    LF    LR
+  { "forward",  HIGH, LOW,  HIGH, LOW  },
+  { "back",     LOW,  HIGH, LOW,  HIGH },
+  { "right",    LOW,  HIGH, HIGH, LOW  },
+  { "left",     HIGH, LOW,  LOW,  HIGH },
+};
+static const int NUM_COMMANDS = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
+
+// --- グローバル変数 ---
+static NimBLEServer* pServer = nullptr;
+
+// --- プロトタイプ宣言 ---
+void brake();
+void handle_message(const String& message);
+
+// --- BLE サーバーコールバック (接続 / 切断) ---
+class ServerCallbacks : public NimBLEServerCallbacks {
+  void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
+    Serial.printf("[BLE] Client connected (addr: %s)\n",
+                  connInfo.getAddress().toString().c_str());
+  }
+
+  void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
+    Serial.printf("[BLE] Client disconnected (reason=%d) -> brake + re-advertise\n", reason);
+    brake();
+    NimBLEDevice::startAdvertising();
+  }
+};
+
+// --- BLE 受信コールバック ---
+class RxCallbacks : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+    std::string raw = pCharacteristic->getValue();
+    if (raw.empty()) return;
+
+    String rxValue = String(raw.c_str());
+    Serial.printf("[BLE] Raw: [%s] (len=%d)\n", rxValue.c_str(), rxValue.length());
+
+    rxValue.trim();
+    Serial.printf("[BLE] Trimmed: [%s]\n", rxValue.c_str());
+
+    handle_message(rxValue);
+  }
+};
+
+// =========================================================
+//  setup
+// =========================================================
 void setup() {
   Serial.begin(115200);
   Serial.println("\n--- Bumper Car System Booting ---");
-  
-  pinMode(RF, OUTPUT); pinMode(RR, OUTPUT);
-  pinMode(LF, OUTPUT); pinMode(LR, OUTPUT);
+
+  // モーターピン初期化
+  const int pins[] = { RF, RR, LF, LR };
+  for (int pin : pins) {
+    pinMode(pin, OUTPUT);
+  }
   brake();
 
-  BLEDevice::init(BLE_DEVICE_NAME);
-  BLEServer *pServer = BLEDevice::createServer();
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-  
-  BLECharacteristic *pRxCharacteristic = pService->createCharacteristic(
-                                         CHARACTERISTIC_UUID_RX,
-                                         BLECharacteristic::PROPERTY_WRITE
-                                       );
-  
-  // クラス定義を上に移動したので、ここでエラーになりません
-  pRxCharacteristic->setCallbacks(new MyCallbacks());
-  
+  // NimBLE 初期化
+  NimBLEDevice::init(BLE_DEVICE_NAME);
+
+  pServer = NimBLEDevice::createServer();
+  pServer->setCallbacks(new ServerCallbacks());
+
+  NimBLEService* pService = pServer->createService(SERVICE_UUID);
+
+  NimBLECharacteristic* pRxCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID_RX,
+    NIMBLE_PROPERTY::WRITE
+  );
+  pRxCharacteristic->setCallbacks(new RxCallbacks());
+
   pService->start();
-  pServer->getAdvertising()->start();
+
+  NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->start();
+
   Serial.println("Waiting for Web Bluetooth connection...");
 }
 
+// =========================================================
+//  loop
+// =========================================================
 void loop() {
   delay(100);
 }
 
-// --- モーター制御関数 ---
+// =========================================================
+//  モーター制御
+// =========================================================
 void brake() {
-  digitalWrite(RF, LOW); digitalWrite(RR, LOW);
-  digitalWrite(LF, LOW); digitalWrite(LR, LOW);
-  delay(10);
+  digitalWrite(RF, LOW);
+  digitalWrite(RR, LOW);
+  digitalWrite(LF, LOW);
+  digitalWrite(LR, LOW);
 }
 
-void handle_message(String message) {
-  Serial.print("-> Executing Command: ");
-  Serial.println(message);
+void handle_message(const String& message) {
+  Serial.printf("-> Executing Command: %s\n", message.c_str());
 
-  if (message == "forward") {
-    digitalWrite(RR, LOW); digitalWrite(LR, LOW); delay(5);
-    digitalWrite(RF, HIGH); digitalWrite(LF, HIGH);
+  // マッピングテーブルから一致するコマンドを検索
+  for (int i = 0; i < NUM_COMMANDS; i++) {
+    if (message == COMMANDS[i].name) {
+      // 安全のため先に全ピン LOW にしてからセット
+      brake();
+      delayMicroseconds(500);
+
+      digitalWrite(RF, COMMANDS[i].rfState);
+      digitalWrite(RR, COMMANDS[i].rrState);
+      digitalWrite(LF, COMMANDS[i].lfState);
+      digitalWrite(LR, COMMANDS[i].lrState);
+      return;
+    }
   }
-  else if (message == "back") {
-    digitalWrite(RF, LOW); digitalWrite(LF, LOW); delay(5);
-    digitalWrite(RR, HIGH); digitalWrite(LR, HIGH);
-  }
-  else if (message == "right") {
-    digitalWrite(RF, LOW); digitalWrite(LR, LOW); delay(5);
-    digitalWrite(RR, HIGH); digitalWrite(LF, HIGH);
-  }
-  else if (message == "left") {
-    digitalWrite(RR, LOW); digitalWrite(LF, LOW); delay(5);
-    digitalWrite(RF, HIGH); digitalWrite(LR, HIGH);
-  }
-  else if (message == "brake") {
+
+  if (message == "brake") {
     brake();
+    return;
   }
-  else {
-    Serial.println("-> [Warning] Unknown command ignored.");
-  }
+
+  Serial.println("-> [Warning] Unknown command ignored.");
 }
