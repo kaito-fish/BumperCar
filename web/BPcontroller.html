@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Bumper Car Web Controller</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -16,14 +16,22 @@
 
   <div class="grid">
     <div class="empty"></div>
-    <button id="btn-w" class="btn" onmousedown="sendCmd('forward')" onmouseup="sendCmd('brake')">W (前)</button>
+    <button id="btn-w" class="btn"
+      onmousedown="sendCmd('forward')" onmouseup="sendCmd('brake')"
+      ontouchstart="sendCmd('forward')" ontouchend="sendCmd('brake')">W (前)</button>
     <div class="empty"></div>
-    <button id="btn-a" class="btn" onmousedown="sendCmd('left')" onmouseup="sendCmd('brake')">A (左)</button>
-    <button id="btn-s" class="btn" onmousedown="sendCmd('back')" onmouseup="sendCmd('brake')">S (後)</button>
-    <button id="btn-d" class="btn" onmousedown="sendCmd('right')" onmouseup="sendCmd('brake')">D (右)</button>
+    <button id="btn-a" class="btn"
+      onmousedown="sendCmd('left')" onmouseup="sendCmd('brake')"
+      ontouchstart="sendCmd('left')" ontouchend="sendCmd('brake')">A (左)</button>
+    <button id="btn-s" class="btn"
+      onmousedown="sendCmd('back')" onmouseup="sendCmd('brake')"
+      ontouchstart="sendCmd('back')" ontouchend="sendCmd('brake')">S (後)</button>
+    <button id="btn-d" class="btn"
+      onmousedown="sendCmd('right')" onmouseup="sendCmd('brake')"
+      ontouchstart="sendCmd('right')" ontouchend="sendCmd('brake')">D (右)</button>
   </div>
-  
-  <p class="instruction">画面上のボタンをクリック、またはキーボードの <strong>W, A, S, D</strong> キーで操作します。<br>※未接続時は画面上のテスト動作のみ行われます。</p>
+
+  <p class="instruction">画面上のボタンをクリック/タップ、またはキーボードの <strong>W, A, S, D</strong> キーで操作します。<br>※未接続時は画面上のテスト動作のみ行われます。</p>
 
   <script src="script.js" defer></script>
 </body>
