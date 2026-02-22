@@ -72,7 +72,7 @@ ESP32 からは信号線へ電圧を出さず、**必要なときだけ GPIO を
 
 | カテゴリ | 技術 |
 | :--- | :--- |
-| マイコン | ESP32 (MH-ET LIVE DevKit) |
+| マイコン | ESP-WROOM-32 |
 | フレームワーク | Arduino (PlatformIO) |
 | BLE ライブラリ | [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino) |
 | フロントエンド | HTML / CSS / JavaScript (Web Bluetooth API) |
