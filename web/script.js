@@ -44,24 +44,38 @@ async function establishConnection() {
   document.getElementById("status").style.color = "green";
 }
 
-// --- 切断時: 自動再接続を試行 ---
+// --- 切断時: 指数バックオフで自動再接続を試行 ---
+const RECONNECT_MAX_ATTEMPTS = 5;
+const RECONNECT_BASE_DELAY_MS = 3000;
+
 function onDisconnected() {
   characteristicRX = null;
-  document.getElementById("status").innerText = "切断されました — 3秒後に再接続を試みます…";
-  document.getElementById("status").style.color = "orange";
   updateUI("brake");
+  scheduleReconnect(1);
+}
+
+function scheduleReconnect(attempt) {
+  if (!bleDevice || attempt > RECONNECT_MAX_ATTEMPTS) {
+    document.getElementById("status").innerText = "再接続失敗 — ページを再読み込みしてください";
+    document.getElementById("status").style.color = "red";
+    return;
+  }
+
+  const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt - 1); // 3s, 6s, 12s, 24s, 48s
+  document.getElementById("status").innerText =
+    `切断されました — ${delay / 1000}秒後に再接続を試みます… (${attempt}/${RECONNECT_MAX_ATTEMPTS})`;
+  document.getElementById("status").style.color = "orange";
 
   setTimeout(async () => {
     if (!bleDevice) return;
     try {
-      console.log("再接続を試行中...");
+      console.log(`再接続を試行中… (${attempt}/${RECONNECT_MAX_ATTEMPTS})`);
       await establishConnection();
     } catch (err) {
-      console.error("再接続失敗:", err);
-      document.getElementById("status").innerText = "再接続失敗 (テストモード)";
-      document.getElementById("status").style.color = "red";
+      console.error(`再接続失敗 (試行 ${attempt}):`, err);
+      scheduleReconnect(attempt + 1);
     }
-  }, 3000);
+  }, delay);
 }
 
 // =========================================================
